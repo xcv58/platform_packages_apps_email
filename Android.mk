@@ -36,6 +36,7 @@ LOCAL_SRC_FILES := $(call all-java-files-under, $(unified_email_dir)/src)
 LOCAL_SRC_FILES += $(call all-java-files-under, src/com/android)
 LOCAL_SRC_FILES += $(call all-java-files-under, provider_src/com/android)
 LOCAL_SRC_FILES += $(call all-java-files-under, src/com/beetstra)
+LOCAL_SRC_FILES += $(call all-java-files-under, ../../../frameworks/base/core/java/edu/buffalo/cse/phonelab/json)
 
 LOCAL_RESOURCE_DIR := $(addprefix $(LOCAL_PATH)/, $(res_dir))
 

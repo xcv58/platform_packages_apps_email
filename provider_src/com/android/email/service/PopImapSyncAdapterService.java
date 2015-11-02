@@ -17,19 +17,13 @@
 package com.android.email.service;
 
 import android.app.Service;
-import android.content.AbstractThreadedSyncAdapter;
-import android.content.ContentProviderClient;
-import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SyncResult;
+import android.content.*;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import android.text.format.DateUtils;
 import com.android.email.R;
 import com.android.emailcommon.TempDirectory;
 import com.android.emailcommon.mail.MessagingException;
@@ -43,11 +37,18 @@ import com.android.emailcommon.service.EmailServiceProxy;
 import com.android.emailcommon.service.EmailServiceStatus;
 import com.android.mail.providers.UIProvider;
 import com.android.mail.utils.LogUtils;
+import edu.buffalo.cse.phonelab.json.StrictJSONArray;
+import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PopImapSyncAdapterService extends Service {
     private static final String TAG = "PopImapSyncService";
+
+    private static final String MAYBE_TAG = "Maybe_Email_PhoneLab";
+    private static final String SYNC_ACTION = "sync";
+
     private SyncAdapterImpl mSyncAdapter = null;
 
     public PopImapSyncAdapterService() {
@@ -62,8 +63,37 @@ public class PopImapSyncAdapterService extends Service {
         @Override
         public void onPerformSync(android.accounts.Account account, Bundle extras,
                 String authority, ContentProviderClient provider, SyncResult syncResult) {
+
+            boolean uiRefresh = extras.getBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+            // TODO: get current sync frequency and compare with maybe, if diff use maybe to overwrite.
+            int deltaMessageCount = extras.getInt(Mailbox.SYNC_EXTRA_DELTA_MESSAGE_COUNT, 0);
+            boolean syncAutomatically = ContentResolver.getSyncAutomatically(account, EmailContent.AUTHORITY);
+            final List<PeriodicSync> syncs = ContentResolver.getPeriodicSyncs(account, EmailContent.AUTHORITY);
+            StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
+                    .put(StrictJSONObject.KEY_ACTION, SYNC_ACTION)
+                    .put("uiRefresh", uiRefresh)
+                    .put("syncAutomatically", syncAutomatically)
+                    .put("deltaMessageCount", deltaMessageCount);
+            StrictJSONArray periodicSyncLog = new StrictJSONArray();
+            for (final PeriodicSync sync : syncs) {
+                int oldSyncInterval = (int) sync.period / 60;
+                int syncInterval = 1;
+                periodicSyncLog.put(new StrictJSONObject().put("period", oldSyncInterval));
+                if (oldSyncInterval != syncInterval) {
+                    // First remove all existing periodic syncs.
+//                    ContentResolver.removePeriodicSync(account, EmailContent.AUTHORITY, sync.extras);
+                    // Only positive values of sync interval indicate periodic syncs. The value is in minutes,
+                    // while addPeriodicSync expects its time in seconds.
+                    if (syncInterval > 0) {
+                        ContentResolver.addPeriodicSync(account, EmailContent.AUTHORITY, Bundle.EMPTY,
+                                syncInterval * DateUtils.MINUTE_IN_MILLIS / DateUtils.SECOND_IN_MILLIS);
+                    }
+                }
+            }
+            log.put("syncs", periodicSyncLog);
+
             PopImapSyncAdapterService.performSync(getContext(), account, extras, provider,
-                    syncResult);
+                    syncResult, log);
         }
     }
 
@@ -99,14 +129,21 @@ public class PopImapSyncAdapterService extends Service {
         return false;
     }
 
-    private static void sync(final Context context, final long mailboxId,
+    private static StrictJSONObject sync(final Context context, final long mailboxId,
             final Bundle extras, final SyncResult syncResult, final boolean uiRefresh,
             final int deltaMessageCount) {
+        StrictJSONObject strictJSONObject = new StrictJSONObject();
         TempDirectory.setTempDirectory(context);
         Mailbox mailbox = Mailbox.restoreMailboxWithId(context, mailboxId);
-        if (mailbox == null) return;
+        if (mailbox == null) {
+            strictJSONObject.put("fail", "mailbox is null");
+            return strictJSONObject;
+        }
         Account account = Account.restoreAccountWithId(context, mailbox.mAccountKey);
-        if (account == null) return;
+        if (account == null) {
+            strictJSONObject.put("fail", "account is null");
+            return strictJSONObject;
+        }
         ContentResolver resolver = context.getContentResolver();
         String protocol = account.getProtocol(context);
         if ((mailbox.mType != Mailbox.TYPE_OUTBOX) &&
@@ -115,9 +152,12 @@ public class PopImapSyncAdapterService extends Service {
             // updates table and return
             resolver.delete(Message.UPDATED_CONTENT_URI, MessageColumns.MAILBOX_KEY + "=?",
                     new String[] {Long.toString(mailbox.mId)});
-            return;
+            strictJSONObject.put("fail", "non-syncing mailbox");
+            return strictJSONObject;
         }
         LogUtils.d(TAG, "About to sync mailbox: " + mailbox.mDisplayName);
+        strictJSONObject.put("name", mailbox.mDisplayName);
+        strictJSONObject.put("type", mailbox.mType);
 
         Uri mailboxUri = ContentUris.withAppendedId(Mailbox.CONTENT_URI, mailboxId);
         ContentValues values = new ContentValues();
@@ -145,6 +185,8 @@ public class PopImapSyncAdapterService extends Service {
                         status = Pop3Service.synchronizeMailboxSynchronous(context, account,
                                 mailbox, deltaMessageCount);
                     }
+                    strictJSONObject.put("status", status);
+                    strictJSONObject.put("lastSyncResult", lastSyncResult);
                     EmailServiceStatus.syncMailboxStatus(resolver, extras, mailboxId, status, 0,
                             lastSyncResult);
                 }
@@ -186,15 +228,17 @@ public class PopImapSyncAdapterService extends Service {
             values.put(Mailbox.SYNC_TIME, System.currentTimeMillis());
             resolver.update(mailboxUri, values, null, null);
         }
+        return strictJSONObject;
     }
 
     /**
      * Partial integration with system SyncManager; we initiate manual syncs upon request
      */
     private static void performSync(Context context, android.accounts.Account account,
-            Bundle extras, ContentProviderClient provider, SyncResult syncResult) {
+            Bundle extras, ContentProviderClient provider, SyncResult syncResult, StrictJSONObject log) {
         // Find an EmailProvider account with the Account's email address
         Cursor c = null;
+        StrictJSONArray syncArray = new StrictJSONArray();
         try {
             c = provider.query(com.android.emailcommon.provider.Account.CONTENT_URI,
                     Account.CONTENT_PROJECTION, AccountColumns.EMAIL_ADDRESS + "=?",
@@ -202,14 +246,16 @@ public class PopImapSyncAdapterService extends Service {
             if (c != null && c.moveToNext()) {
                 Account acct = new Account();
                 acct.restore(c);
+                log.put("name", acct.mDisplayName);
                 if (extras.getBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD)) {
+                    log.put("upload", true);
                     LogUtils.d(TAG, "Upload sync request for " + acct.mDisplayName);
                     // See if any boxes have mail...
                     ArrayList<Long> mailboxesToUpdate;
                     Cursor updatesCursor = provider.query(Message.UPDATED_CONTENT_URI,
-                            new String[] {MessageColumns.MAILBOX_KEY},
+                            new String[]{MessageColumns.MAILBOX_KEY},
                             MessageColumns.ACCOUNT_KEY + "=?",
-                            new String[] {Long.toString(acct.mId)},
+                            new String[]{Long.toString(acct.mId)},
                             null);
                     try {
                         if ((updatesCursor == null) || (updatesCursor.getCount() == 0)) return;
@@ -225,12 +271,14 @@ public class PopImapSyncAdapterService extends Service {
                             updatesCursor.close();
                         }
                     }
-                    for (long mailboxId: mailboxesToUpdate) {
-                        sync(context, mailboxId, extras, syncResult, false, 0);
+                    for (long mailboxId : mailboxesToUpdate) {
+                        StrictJSONObject result = sync(context, mailboxId, extras, syncResult, false, 0);
+                        syncArray.put(result);
                     }
                 } else {
                     LogUtils.d(TAG, "Sync request for " + acct.mDisplayName);
                     LogUtils.d(TAG, extras.toString());
+                    log.put("upload", false);
 
                     // We update our folder structure on every sync.
                     final EmailServiceProxy service =
@@ -256,8 +304,9 @@ public class PopImapSyncAdapterService extends Service {
                         int deltaMessageCount =
                                 extras.getInt(Mailbox.SYNC_EXTRA_DELTA_MESSAGE_COUNT, 0);
                         for (long mailboxId : mailboxIds) {
-                            sync(context, mailboxId, extras, syncResult, uiRefresh,
+                            StrictJSONObject result = sync(context, mailboxId, extras, syncResult, uiRefresh,
                                     deltaMessageCount);
+                            syncArray.put(result);
                         }
                     }
                 }
@@ -265,6 +314,9 @@ public class PopImapSyncAdapterService extends Service {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            log.put("syncResults", syncArray);
+            log.put("extras", extras.toString());
+            log.log();
             if (c != null) {
                 c.close();
             }
