@@ -63,6 +63,7 @@ import com.android.emailcommon.service.SyncWindow;
 import com.android.emailcommon.utility.AttachmentUtilities;
 import com.android.mail.providers.UIProvider;
 import com.android.mail.utils.LogUtils;
+import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -163,7 +164,7 @@ public class ImapService extends Service {
      */
     public static synchronized int synchronizeMailboxSynchronous(Context context,
             final Account account, final Mailbox folder, final boolean loadMore,
-            final boolean uiRefresh) throws MessagingException {
+            final boolean uiRefresh, StrictJSONObject log) throws MessagingException {
         TrafficStats.setThreadStatsTag(TrafficFlags.getSyncFlags(context, account));
         final NotificationController nc =
                 NotificationControllerCreatorHolder.getInstance(context);
@@ -171,7 +172,7 @@ public class ImapService extends Service {
         try {
             remoteStore = Store.getInstance(account, context);
             processPendingActionsSynchronous(context, account, remoteStore, uiRefresh);
-            synchronizeMailboxGeneric(context, account, remoteStore, folder, loadMore, uiRefresh);
+            synchronizeMailboxGeneric(context, account, remoteStore, folder, loadMore, uiRefresh, log);
             // Clear authentication notification for this account
             nc.cancelLoginFailedNotification(account.mId);
         } catch (MessagingException e) {
@@ -361,7 +362,7 @@ public class ImapService extends Service {
      */
     private synchronized static void synchronizeMailboxGeneric(final Context context,
             final Account account, Store remoteStore, final Mailbox mailbox, final boolean loadMore,
-            final boolean uiRefresh)
+            final boolean uiRefresh, StrictJSONObject log)
             throws MessagingException {
 
         LogUtils.d(Logging.LOG_TAG, "synchronizeMailboxGeneric " + account + " " + mailbox + " "
@@ -422,13 +423,16 @@ public class ImapService extends Service {
                 }
             }
             LogUtils.d(Logging.LOG_TAG, "full sync: original window: now - " + endDate);
+            log.put("syncType", "full");
         } else {
             // We are doing a frequent, quick sync. This only syncs a small time window, so that
             // we wil get any new messages, but not spend a lot of bandwidth downloading
             // messageIds that we most likely already have.
             endDate = System.currentTimeMillis() - QUICK_SYNC_WINDOW_MILLIS;
             LogUtils.d(Logging.LOG_TAG, "quick sync: original window: now - " + endDate);
+            log.put("syncType", "quick");
         }
+        log.put("endDate", endDate);
 
         // 2. Open the remote folder and create the remote folder if necessary
         // The account might have been deleted
@@ -469,6 +473,7 @@ public class ImapService extends Service {
         Message[] remoteMessages;
         remoteMessages = remoteFolder.getMessages(0, endDate, null);
         LogUtils.d(Logging.LOG_TAG, "received " + remoteMessages.length + " messages");
+        log.put("received", remoteMessages.length);
 
         // 7. See if we need any additional messages beyond our date query range results.
         // If we do, keep increasing the size of our query window until we have
@@ -483,6 +488,7 @@ public class ImapService extends Service {
             }
         }
         LogUtils.d(Logging.LOG_TAG, "need " + totalCountNeeded + " total");
+        log.put("need", totalCountNeeded);
 
         final int additionalMessagesNeeded = totalCountNeeded - remoteMessages.length;
         if (additionalMessagesNeeded > 0) {
@@ -610,6 +616,8 @@ public class ImapService extends Service {
                 unsyncedMessages.add(message);
             }
         }
+
+        log.put("unsynced", unsyncedMessages.size());
 
         // 10. Download basic info about the new/unloaded messages (if any)
         /*

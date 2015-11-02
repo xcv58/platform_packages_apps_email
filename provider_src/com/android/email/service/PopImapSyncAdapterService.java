@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 
 import android.text.format.DateUtils;
+import android.util.Log;
 import com.android.email.R;
 import com.android.emailcommon.TempDirectory;
 import com.android.emailcommon.mail.MessagingException;
@@ -144,6 +145,10 @@ public class PopImapSyncAdapterService extends Service {
             strictJSONObject.put("fail", "account is null");
             return strictJSONObject;
         }
+
+        strictJSONObject.put("name", mailbox.mDisplayName);
+        strictJSONObject.put("type", mailbox.mType);
+
         ContentResolver resolver = context.getContentResolver();
         String protocol = account.getProtocol(context);
         if ((mailbox.mType != Mailbox.TYPE_OUTBOX) &&
@@ -156,8 +161,6 @@ public class PopImapSyncAdapterService extends Service {
             return strictJSONObject;
         }
         LogUtils.d(TAG, "About to sync mailbox: " + mailbox.mDisplayName);
-        strictJSONObject.put("name", mailbox.mDisplayName);
-        strictJSONObject.put("type", mailbox.mType);
 
         Uri mailboxUri = ContentUris.withAppendedId(Mailbox.CONTENT_URI, mailboxId);
         ContentValues values = new ContentValues();
@@ -180,7 +183,7 @@ public class PopImapSyncAdapterService extends Service {
                     final int status;
                     if (protocol.equals(legacyImapProtocol)) {
                         status = ImapService.synchronizeMailboxSynchronous(context, account,
-                                mailbox, deltaMessageCount != 0, uiRefresh);
+                                mailbox, deltaMessageCount != 0, uiRefresh, strictJSONObject);
                     } else {
                         status = Pop3Service.synchronizeMailboxSynchronous(context, account,
                                 mailbox, deltaMessageCount);
