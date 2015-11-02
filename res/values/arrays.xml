@@ -32,7 +32,7 @@
 
     <string-array name="account_settings_check_frequency_values" translatable="false">
         <item>-1</item>
-        <item>5</item>
+        <item>1</item>
         <item>10</item>
         <item>15</item>
         <item>30</item>
