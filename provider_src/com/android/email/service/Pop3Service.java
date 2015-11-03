@@ -56,6 +56,7 @@ import com.android.mail.providers.UIProvider;
 import com.android.mail.providers.UIProvider.AttachmentState;
 import com.android.mail.utils.LogUtils;
 
+import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 import org.apache.james.mime4j.EOLConvertingInputStream;
 
 import java.io.IOException;
@@ -106,12 +107,12 @@ public class Pop3Service extends Service {
      * @throws MessagingException
      */
     public static int synchronizeMailboxSynchronous(Context context, final Account account,
-            final Mailbox folder, final int deltaMessageCount) throws MessagingException {
+            final Mailbox folder, final int deltaMessageCount, StrictJSONObject log) throws MessagingException {
         TrafficStats.setThreadStatsTag(TrafficFlags.getSyncFlags(context, account));
         final NotificationController nc =
                 NotificationControllerCreatorHolder.getInstance(context);
         try {
-            synchronizePop3Mailbox(context, account, folder, deltaMessageCount);
+            synchronizePop3Mailbox(context, account, folder, deltaMessageCount, log);
             // Clear authentication notification for this account
             if (nc != null) {
                 nc.cancelLoginFailedNotification(account.mId);
@@ -228,12 +229,13 @@ public class Pop3Service extends Service {
      * @throws MessagingException
      */
     private synchronized static void synchronizePop3Mailbox(final Context context, final Account account,
-            final Mailbox mailbox, final int deltaMessageCount) throws MessagingException {
+            final Mailbox mailbox, final int deltaMessageCount, StrictJSONObject log) throws MessagingException {
         // TODO Break this into smaller pieces
         ContentResolver resolver = context.getContentResolver();
 
         // We only sync Inbox
         if (mailbox.mType != Mailbox.TYPE_INBOX) {
+            log.put("fail", "only support inbox");
             return;
         }
 
@@ -312,6 +314,7 @@ public class Pop3Service extends Service {
         Pop3Message[] remoteMessages = new Pop3Message[0];
         final ArrayList<Pop3Message> unsyncedMessages = new ArrayList<Pop3Message>();
         HashMap<String, Pop3Message> remoteUidMap = new HashMap<String, Pop3Message>();
+        log.put("received", remoteMessageCount);
 
         if (remoteMessageCount > 0) {
             /*
@@ -375,6 +378,9 @@ public class Pop3Service extends Service {
                 } else {
                     LogUtils.d(Logging.LOG_TAG, "don't need to sync " + uid);
                 }
+
+                log.put("need", unsyncedMessages.size());
+                log.put("unsynced", unsyncedMessages.size());
 
                 if (count >= countNeeded) {
                     LogUtils.d(Logging.LOG_TAG, "loaded " + count + " messages, stopping");

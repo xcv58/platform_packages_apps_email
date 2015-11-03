@@ -24,7 +24,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 
 import android.text.format.DateUtils;
-import android.util.Log;
 import com.android.email.R;
 import com.android.emailcommon.TempDirectory;
 import com.android.emailcommon.mail.MessagingException;
@@ -182,11 +181,13 @@ public class PopImapSyncAdapterService extends Service {
                             EmailServiceStatus.IN_PROGRESS, 0, lastSyncResult);
                     final int status;
                     if (protocol.equals(legacyImapProtocol)) {
+                        strictJSONObject.put("protocol", "IMAP");
                         status = ImapService.synchronizeMailboxSynchronous(context, account,
                                 mailbox, deltaMessageCount != 0, uiRefresh, strictJSONObject);
                     } else {
+                        strictJSONObject.put("protocol", "POP3");
                         status = Pop3Service.synchronizeMailboxSynchronous(context, account,
-                                mailbox, deltaMessageCount);
+                                mailbox, deltaMessageCount, strictJSONObject);
                     }
                     strictJSONObject.put("status", status);
                     strictJSONObject.put("lastSyncResult", lastSyncResult);
