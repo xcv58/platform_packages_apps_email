@@ -56,6 +56,7 @@ import com.android.mail.providers.UIProvider;
 import com.android.mail.providers.UIProvider.AttachmentState;
 import com.android.mail.utils.LogUtils;
 
+import edu.buffalo.cse.phonelab.json.StrictJSONArray;
 import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 import org.apache.james.mime4j.EOLConvertingInputStream;
 
@@ -167,10 +168,11 @@ public class Pop3Service extends Service {
      * @param toMailbox the destination mailbox we're syncing
      * @throws MessagingException
      */
-    static void loadUnsyncedMessages(final Context context, final Account account,
+    static StrictJSONArray loadUnsyncedMessages(final Context context, final Account account,
             Pop3Folder remoteFolder, ArrayList<Pop3Message> unsyncedMessages,
             final Mailbox toMailbox) throws MessagingException {
 
+        StrictJSONArray result = new StrictJSONArray();
         if (DebugUtils.DEBUG) {
             LogUtils.d(TAG, "Loading " + unsyncedMessages.size() + " unsynced messages");
         }
@@ -197,10 +199,14 @@ public class Pop3Service extends Service {
                 }
                 // If message is incomplete, create a "fake" attachment
                 Utilities.copyOneMessageToProvider(context, message, account, toMailbox, flag);
+                result.put(new StrictJSONObject()
+                        .put("uid", message.getUid())
+                        .put("messageId", message.getMessageId()));
             }
         } catch (IOException e) {
             throw new MessagingException(MessagingException.IOERROR);
         }
+        return result;
     }
 
     private static class FetchCallback implements EOLConvertingInputStream.Callback {
@@ -477,7 +483,8 @@ public class Pop3Service extends Service {
 
         LogUtils.d(TAG, "loadUnsynchedMessages " + unsyncedMessages.size());
         // Load messages we need to sync
-        loadUnsyncedMessages(context, account, remoteFolder, unsyncedMessages, mailbox);
+        StrictJSONArray loadResult = loadUnsyncedMessages(context, account, remoteFolder, unsyncedMessages, mailbox);
+        log.put("unsyncResult", loadResult);
 
         // Clean up and report results
         remoteFolder.close(false);

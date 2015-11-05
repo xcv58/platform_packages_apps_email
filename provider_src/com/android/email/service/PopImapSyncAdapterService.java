@@ -251,6 +251,8 @@ public class PopImapSyncAdapterService extends Service {
                 Account acct = new Account();
                 acct.restore(c);
                 log.put("name", acct.mDisplayName);
+                log.put("accountId", acct.getId());
+                log.put("syncInterval", acct.getSyncInterval());
                 if (extras.getBoolean(ContentResolver.SYNC_EXTRAS_UPLOAD)) {
                     log.put("upload", true);
                     LogUtils.d(TAG, "Upload sync request for " + acct.mDisplayName);

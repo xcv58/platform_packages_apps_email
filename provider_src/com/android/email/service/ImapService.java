@@ -63,6 +63,7 @@ import com.android.emailcommon.service.SyncWindow;
 import com.android.emailcommon.utility.AttachmentUtilities;
 import com.android.mail.providers.UIProvider;
 import com.android.mail.utils.LogUtils;
+import edu.buffalo.cse.phonelab.json.StrictJSONArray;
 import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 
 import java.util.ArrayList;
@@ -252,9 +253,10 @@ public class ImapService extends Service {
      * @param toMailbox the destination mailbox we're syncing
      * @throws MessagingException
      */
-    static void loadUnsyncedMessages(final Context context, final Account account,
+    static StrictJSONArray loadUnsyncedMessages(final Context context, final Account account,
             Folder remoteFolder, ArrayList<Message> messages, final Mailbox toMailbox)
             throws MessagingException {
+        StrictJSONArray result = new StrictJSONArray();
 
         FetchProfile fp = new FetchProfile();
         fp.add(FetchProfile.Item.STRUCTURE);
@@ -276,7 +278,11 @@ public class ImapService extends Service {
             // Store the updated message locally and mark it fully loaded
             Utilities.copyOneMessageToProvider(context, message, account, toMailbox,
                     EmailContent.Message.FLAG_LOADED_COMPLETE);
+            result.put(new StrictJSONObject()
+                    .put("uid", message.getUid())
+                    .put("messageId", message.getMessageId()));
         }
+        return result;
     }
 
     public static void downloadFlagAndEnvelope(final Context context, final Account account,
@@ -736,7 +742,8 @@ public class ImapService extends Service {
             }
         }
 
-        loadUnsyncedMessages(context, account, remoteFolder, unsyncedMessages, mailbox);
+        StrictJSONArray loadResult = loadUnsyncedMessages(context, account, remoteFolder, unsyncedMessages, mailbox);
+        log.put("unsyncResult", loadResult);
 
         if (fullSync) {
             mailbox.updateLastFullSyncTime(context, SystemClock.elapsedRealtime());
