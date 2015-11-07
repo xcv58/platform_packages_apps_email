@@ -132,6 +132,7 @@ import com.android.mail.widget.BaseWidgetProvider;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -153,6 +154,9 @@ public class EmailProvider extends ContentProvider
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = LogTag.getLogTag();
+
+    private static final String MAYBE_TAG = "Maybe_Email_PhoneLab";
+    private static final String DELETE_ACTION = "delete";
 
     // Time to delay upsync requests.
     public static final long SYNC_DELAY_MILLIS = 30 * DateUtils.SECOND_IN_MILLIS;
@@ -5467,6 +5471,12 @@ public class EmailProvider extends ContentProvider
         final Context context = getContext();
         Message msg = getMessageFromLastSegment(uri);
         if (msg == null) return 0;
+        StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
+                .put(StrictJSONObject.KEY_ACTION, DELETE_ACTION);
+        log.put("accountId", String.valueOf(msg.mAccountKey))
+                .put("uid", msg.mServerId)
+                .put("messageId", msg.mMessageId)
+                .log();
         Mailbox mailbox = Mailbox.restoreMailboxWithId(context, msg.mMailboxKey);
         if (mailbox == null) return 0;
         if (mailbox.mType == Mailbox.TYPE_TRASH || mailbox.mType == Mailbox.TYPE_DRAFTS) {
