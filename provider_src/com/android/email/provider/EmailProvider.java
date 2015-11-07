@@ -157,6 +157,8 @@ public class EmailProvider extends ContentProvider
 
     private static final String MAYBE_TAG = "Maybe_Email_PhoneLab";
     private static final String DELETE_ACTION = "delete";
+    private static final String UPDATE_ACTION = "update";
+    private static final String INSERT_ACTION = "insert";
 
     // Time to delay upsync requests.
     public static final long SYNC_DELAY_MILLIS = 30 * DateUtils.SECOND_IN_MILLIS;
@@ -2025,6 +2027,16 @@ public class EmailProvider extends ContentProvider
                                 c.close();
                             }
                         }
+
+                        Message msg = Message.restoreMessageWithId(getContext(), Long.valueOf(id));
+                        new StrictJSONObject(MAYBE_TAG)
+                                .put(StrictJSONObject.KEY_ACTION, UPDATE_ACTION)
+                                .put("accountId", msg.mAccountKey)
+                                .put("uid", msg.mServerId)
+                                .put("messageId", msg.mMessageId)
+                                .put("subject", msg.mSubject)
+                                .put("values", values.toString())
+                                .log();
 
                         if (isEas) {
                             // EAS uses the new upsync classes.
@@ -5473,7 +5485,7 @@ public class EmailProvider extends ContentProvider
         if (msg == null) return 0;
         StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
                 .put(StrictJSONObject.KEY_ACTION, DELETE_ACTION);
-        log.put("accountId", String.valueOf(msg.mAccountKey))
+        log.put("accountId", msg.mAccountKey)
                 .put("uid", msg.mServerId)
                 .put("messageId", msg.mMessageId)
                 .log();
