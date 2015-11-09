@@ -42,9 +42,6 @@ import edu.buffalo.cse.phonelab.json.StrictJSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import android.os.MaybeManager;
-import android.util.Log;
-import java.lang.Exception;
 
 public class PopImapSyncAdapterService extends Service {
     private static final String TAG = "PopImapSyncService";
@@ -84,59 +81,7 @@ public class PopImapSyncAdapterService extends Service {
                 int oldSyncInterval = (int) sync.period / 60;
                 if (syncAutomatically) {
                     mContext = getContext();
-                    
-                    int syncInterval;
-                    
-                    int __sync_interval__352 = 0;
-                    
-                    MaybeManager maybeManager;
-                    
-                    try {
-                      maybeManager = (MaybeManager) mContext.getSystemService(Context.MAYBE_SERVICE);
-                    } catch (Exception e) {
-                      Log.e("MaybeService-sync_interval", "Failed to get maybe service.", e);
-                      return;
-                    };
-                    
-                    try {
-                      __sync_interval__352 = maybeManager.getMaybeAlternative("com.android.email.service", "sync_interval");
-                    } catch (Exception e) {
-                      Log.e("MaybeService-sync_interval", "Failed to get maybe alternative.", e);
-                    };
-                    switch (__sync_interval__352) {
-                      
-                      case 5: {
-                                            syncInterval = 5;
-                                            break;
-                      }  
-                      case 4: {
-                                            syncInterval = 4;
-                                            break;
-                      }  
-                      case 3: {
-                                            syncInterval = 3;
-                                            break;
-                      }  
-                      case 2: {
-                                            syncInterval = 2;
-                                            break;
-                      }  
-                      case 1: {
-                                            syncInterval = 1;
-                                            break;
-                      }  
-                      default: {
-                                            syncInterval = oldSyncInterval;
-                                            if (__sync_interval__352 != 0) {
-                                              try {
-                                                maybeManager.badMaybeAlternative("com.android.email.service", "sync_interval", __sync_interval__352);
-                                              } catch (Exception e) {
-                                                Log.e("MaybeService-sync_interval", "Failed to report bad maybe alternative.", e);
-                                              }
-                                            }
-                                            break;
-                      }
-                    }
+                    int syncInterval = maybe("sync_interval") oldSyncInterval, 5, 10, 15, 30, 60;
                     mContext = null;
                     periodicSyncLog.put(new StrictJSONObject()
                             .put("oldSyncInterval", oldSyncInterval)
@@ -392,4 +337,3 @@ public class PopImapSyncAdapterService extends Service {
         }
     }
 }
-
