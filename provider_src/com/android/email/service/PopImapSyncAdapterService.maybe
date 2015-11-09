@@ -1,7 +1,7 @@
 {
     "statements": [
         {
-            "content": "                    int syncInterval = maybe(\"sync_interval\") oldSyncInterval, 1, 2, 3, 4, 5;", 
+            "content": "                    int syncInterval = maybe(\"sync_interval\") oldSyncInterval, 5, 10, 15, 30, 60;", 
             "alternatives": [
                 {
                     "start": 62, 
@@ -15,22 +15,22 @@
                 }, 
                 {
                     "start": 82, 
-                    "end": 83, 
+                    "end": 84, 
                     "value": 2
                 }, 
                 {
-                    "start": 85, 
-                    "end": 86, 
+                    "start": 86, 
+                    "end": 88, 
                     "value": 3
                 }, 
                 {
-                    "start": 88, 
-                    "end": 89, 
+                    "start": 90, 
+                    "end": 92, 
                     "value": 4
                 }, 
                 {
-                    "start": 91, 
-                    "end": 92, 
+                    "start": 94, 
+                    "end": 96, 
                     "value": 5
                 }
             ], 
@@ -39,6 +39,6 @@
             "label": "sync_interval"
         }
     ], 
-    "sha224_hash": "38a801b66d7f01616a8c31f9cb63549f9c7dd8a762b0b6758051a039", 
+    "sha224_hash": "0a7bb9b788b61f85b91fb8ef876da41410423c9f398ababa94e9f035", 
     "package": "com.android.email.service"
 }

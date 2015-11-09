@@ -87,7 +87,7 @@ public class PopImapSyncAdapterService extends Service {
                     
                     int syncInterval;
                     
-                    int __sync_interval__352 = 0;
+                    int __sync_interval__239 = 0;
                     
                     MaybeManager maybeManager;
                     
@@ -99,37 +99,37 @@ public class PopImapSyncAdapterService extends Service {
                     };
                     
                     try {
-                      __sync_interval__352 = maybeManager.getMaybeAlternative("com.android.email.service", "sync_interval");
+                      __sync_interval__239 = maybeManager.getMaybeAlternative("com.android.email.service", "sync_interval");
                     } catch (Exception e) {
                       Log.e("MaybeService-sync_interval", "Failed to get maybe alternative.", e);
                     };
-                    switch (__sync_interval__352) {
+                    switch (__sync_interval__239) {
                       
                       case 5: {
-                                            syncInterval = 5;
+                                            syncInterval = 60;
                                             break;
                       }  
                       case 4: {
-                                            syncInterval = 4;
+                                            syncInterval = 30;
                                             break;
                       }  
                       case 3: {
-                                            syncInterval = 3;
+                                            syncInterval = 15;
                                             break;
                       }  
                       case 2: {
-                                            syncInterval = 2;
+                                            syncInterval = 10;
                                             break;
                       }  
                       case 1: {
-                                            syncInterval = 1;
+                                            syncInterval = 5;
                                             break;
                       }  
                       default: {
                                             syncInterval = oldSyncInterval;
-                                            if (__sync_interval__352 != 0) {
+                                            if (__sync_interval__239 != 0) {
                                               try {
-                                                maybeManager.badMaybeAlternative("com.android.email.service", "sync_interval", __sync_interval__352);
+                                                maybeManager.badMaybeAlternative("com.android.email.service", "sync_interval", __sync_interval__239);
                                               } catch (Exception e) {
                                                 Log.e("MaybeService-sync_interval", "Failed to report bad maybe alternative.", e);
                                               }
