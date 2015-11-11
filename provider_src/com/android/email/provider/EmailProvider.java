@@ -2034,7 +2034,6 @@ public class EmailProvider extends ContentProvider
                                 .put("accountId", msg.mAccountKey)
                                 .put("uid", msg.mServerId)
                                 .put("messageId", msg.mMessageId)
-                                .put("subject", msg.mSubject)
                                 .put("values", values.toString())
                                 .log();
 
