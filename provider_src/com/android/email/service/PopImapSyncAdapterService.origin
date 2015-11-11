@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import android.os.SystemClock;
 import android.text.format.DateUtils;
 import com.android.email.R;
 import com.android.emailcommon.TempDirectory;
@@ -84,6 +85,8 @@ public class PopImapSyncAdapterService extends Service {
              */
             StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
                     .put(StrictJSONObject.KEY_ACTION, SYNC_ACTION)
+                    .put("startElapsedTime", SystemClock.elapsedRealtimeNanos())
+                    .put("startTimestamp", System.currentTimeMillis())
                     .put("uiRefresh", uiRefresh)
                     .put("syncAutomatically", syncAutomatically)
                     .put("deltaMessageCount", deltaMessageCount);
