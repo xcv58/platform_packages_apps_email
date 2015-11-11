@@ -46,7 +46,7 @@ import java.util.List;
 public class PopImapSyncAdapterService extends Service {
     private static final String TAG = "PopImapSyncService";
 
-    private static final String MAYBE_TAG = "Maybe_Email_PhoneLab";
+    private static final String MAYBE_TAG = "Maybe-Email-PhoneLab";
     private static final String SYNC_ACTION = "sync";
 
     private SyncAdapterImpl mSyncAdapter = null;

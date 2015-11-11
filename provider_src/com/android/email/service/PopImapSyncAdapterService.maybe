@@ -39,6 +39,6 @@
             "label": "sync_interval"
         }
     ], 
-    "sha224_hash": "c55d8ebff1e1fbf599cea69002e9c21a1225f4fa1b6ce3b7faa278e7", 
+    "sha224_hash": "a5902a9d945faaff82a9ab2e8663a8a0e42b224fe5acadcb0fc2d834", 
     "package": "com.android.email.service"
 }
