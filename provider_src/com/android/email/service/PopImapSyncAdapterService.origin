@@ -71,6 +71,17 @@ public class PopImapSyncAdapterService extends Service {
             int deltaMessageCount = extras.getInt(Mailbox.SYNC_EXTRA_DELTA_MESSAGE_COUNT, 0);
             boolean syncAutomatically = ContentResolver.getSyncAutomatically(account, EmailContent.AUTHORITY);
             final List<PeriodicSync> syncs = ContentResolver.getPeriodicSyncs(account, EmailContent.AUTHORITY);
+            /**
+             * PhoneLab
+             *
+             * {
+             * "Category": "Maybe",
+             * "SubCategory": "Email",
+             * "Tag": "Maybe-Email-PhoneLab",
+             * "Action": "sync",
+             * "Description": "Reports each sync session, include the uid/messageId of all unsynced messages."
+             * }
+             */
             StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
                     .put(StrictJSONObject.KEY_ACTION, SYNC_ACTION)
                     .put("uiRefresh", uiRefresh)

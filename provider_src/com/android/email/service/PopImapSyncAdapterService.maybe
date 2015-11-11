@@ -34,11 +34,11 @@
                     "value": 5
                 }
             ], 
-            "line": 87, 
+            "line": 98, 
             "type": "assignment", 
             "label": "sync_interval"
         }
     ], 
-    "sha224_hash": "0a7bb9b788b61f85b91fb8ef876da41410423c9f398ababa94e9f035", 
+    "sha224_hash": "c55d8ebff1e1fbf599cea69002e9c21a1225f4fa1b6ce3b7faa278e7", 
     "package": "com.android.email.service"
 }

@@ -155,7 +155,7 @@ public class EmailProvider extends ContentProvider
 
     private static final String TAG = LogTag.getLogTag();
 
-    private static final String MAYBE_TAG = "Maybe_Email_PhoneLab";
+    private static final String MAYBE_TAG = "Maybe-Email-PhoneLab";
     private static final String DELETE_ACTION = "delete";
     private static final String UPDATE_ACTION = "update";
     private static final String INSERT_ACTION = "insert";
@@ -2029,6 +2029,18 @@ public class EmailProvider extends ContentProvider
                         }
 
                         Message msg = Message.restoreMessageWithId(getContext(), Long.valueOf(id));
+                        /**
+                         * PhoneLab
+                         *
+                         * {
+                         * "Category": "Maybe",
+                         * "SubCategory": "Email",
+                         * "Tag": "Maybe-Email-PhoneLab",
+                         * "Action": "update",
+                         * "Description": "Reports message update event, include accountId, uid and messageId
+                         * to identify message; values to identify events: read/unread/delete/move"
+                         * }
+                         */
                         new StrictJSONObject(MAYBE_TAG)
                                 .put(StrictJSONObject.KEY_ACTION, UPDATE_ACTION)
                                 .put("accountId", msg.mAccountKey)
@@ -5482,6 +5494,17 @@ public class EmailProvider extends ContentProvider
         final Context context = getContext();
         Message msg = getMessageFromLastSegment(uri);
         if (msg == null) return 0;
+        /**
+         * PhoneLab
+         *
+         * {
+         * "Category": "Maybe",
+         * "SubCategory": "Email",
+         * "Tag": "Maybe-Email-PhoneLab",
+         * "Action": "delete",
+         * "Description": "Reports message delete event, include accountId, uid and messageId to identify message."
+         * }
+         */
         StrictJSONObject log = new StrictJSONObject(MAYBE_TAG)
                 .put(StrictJSONObject.KEY_ACTION, DELETE_ACTION);
         log.put("accountId", msg.mAccountKey)
